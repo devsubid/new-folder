@@ -1,5 +1,3 @@
-# hubspot.py
-
 import json
 import secrets
 from fastapi import Request, HTTPException
@@ -13,13 +11,11 @@ import requests
 from integrations.integration_item import IntegrationItem
 from redis_client import add_key_value_redis, get_value_redis, delete_key_redis
 
-# HubSpot OAuth credentials
-# You need to create a HubSpot app and get these credentials
 # https://developers.hubspot.com/docs/api/oauth-quickstart
-CLIENT_ID = 'your-hubspot-client-id'
-CLIENT_SECRET = 'your-hubspot-client-secret'
+CLIENT_ID = '3546d632-1816-4360-8392-29353e45167d'
+CLIENT_SECRET = '8f74fd1e-c035-4604-80e5-77d9e18e532d'
 REDIRECT_URI = 'http://localhost:8000/integrations/hubspot/oauth2callback'
-authorization_url = f'https://app.hubspot.com/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&scope=contacts%20crm.objects.contacts.read%20crm.objects.companies.read'
+authorization_url = f'https://app.hubspot.com/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&scope=crm.objects.contacts.read%20crm.objects.companies.read'
 
 async def authorize_hubspot(user_id, org_id):
     """
@@ -61,7 +57,7 @@ async def oauth2callback_hubspot(request: Request):
     if saved_state.get('state') != original_state:
         raise HTTPException(status_code=400, detail='State mismatch')
     
-    # Exchange code for access token
+    
     token_url = 'https://api.hubapi.com/oauth/v1/token'
     data = {
         'grant_type': 'authorization_code',
@@ -79,7 +75,7 @@ async def oauth2callback_hubspot(request: Request):
     
     token_data = response.json()
     
-    # Store the credentials
+    
     credentials = {
         'access_token': token_data.get('access_token'),
         'refresh_token': token_data.get('refresh_token'),
@@ -89,7 +85,7 @@ async def oauth2callback_hubspot(request: Request):
     
     await add_key_value_redis(f'hubspot_credentials:{org_id}:{user_id}', json.dumps(credentials), expire=600)
     
-    # Return a success page
+    
     html_content = """
     <html>
         <head>
@@ -145,7 +141,7 @@ async def get_items_hubspot(credentials) -> list[IntegrationItem]:
     
     list_of_integration_item_metadata = []
     
-    # Get contacts
+    
     contacts_url = 'https://api.hubapi.com/crm/v3/objects/contacts'
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -160,7 +156,7 @@ async def get_items_hubspot(credentials) -> list[IntegrationItem]:
                 create_integration_item_metadata_object(contact, 'Contact')
             )
     
-    # Get companies
+    
     companies_url = 'https://api.hubapi.com/crm/v3/objects/companies'
     companies_response = requests.get(companies_url, headers=headers)
     if companies_response.status_code == 200:
